@@ -1,0 +1,84 @@
+cmake_minimum_required(VERSION 3.16)
+project(ros2_network_analysis)
+
+# C standards
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclpy REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
+find_package(rosidl_default_generators REQUIRED)
+
+# If Ping is a SERVICE, keep it under srv/.
+# If it's actually an ACTION, move the file to action/Ping.action and change the line below accordingly.
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/WirelessLink.msg"
+  "msg/LinkUtilization.msg"
+  "msg/NetworkErrors.msg"
+  "msg/NetworkDelay.msg"
+  "msg/NetworkAnalysis.msg"
+  "msg/WirelessLinkVector.msg"
+  "srv/Ping.srv"
+  DEPENDENCIES builtin_interfaces std_msgs
+)
+
+ament_export_dependencies(rosidl_default_runtime)
+
+include_directories(${Boost_INCLUDE_DIRS})
+
+# ---- C++ executables ----
+add_executable(network_ping_client src/ping_client.cpp)
+ament_target_dependencies(network_ping_client rclcpp std_msgs)
+
+add_executable(network_ping_service src/ping_service.cpp)
+ament_target_dependencies(network_ping_service rclcpp std_msgs)
+
+# Link typesupport (modern replacement for rosidl_target_interfaces)
+rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
+target_link_libraries(network_ping_client "${cpp_typesupport_target}")
+target_link_libraries(network_ping_service "${cpp_typesupport_target}")
+
+install(TARGETS
+  network_ping_client
+  network_ping_service
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# ---- Python package (call EXACTLY ONCE) ----
+# Make sure your python package directory is named 'ros2_network_analysis' (has __init__.py)
+if (NOT TARGET ament_cmake_python_symlink_${PROJECT_NAME})
+   ament_python_install_package(${PROJECT_NAME})
+endif()
+
+# Python entry points / scripts
+install(PROGRAMS
+  scripts/link_utilization.py
+  scripts/network_errors.py
+  scripts/wireless_quality.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# ---- Testing ----
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # set(ament_cmake_copyright_FOUND TRUE)
+  # set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_package()
+
+
+
