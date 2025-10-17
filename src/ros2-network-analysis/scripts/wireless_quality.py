@@ -59,7 +59,7 @@ if __name__ == '__main__':
             update_rate = 10
 
     pub_rssi = node.create_publisher(
-        WirelessLink, 'network_analysis/wireless_quality', 10)
+        WirelessLink, 'node1/network_analysis/wireless_quality', 10)
     rate = node.create_rate(update_rate)
     node.get_logger().info(
         "Initialized measurement of wireless quality of {interface} interface".format(interface=interfacename))
